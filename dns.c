@@ -15,7 +15,7 @@
 #define TYPE_AAAA 28
 
 
-//Converte por exemplo: ufms.br para 4ufms2br0, o formato utilizado pelo DNS de host a ser pesquisado
+//Converts google.com to 6google3com
 void hostConvert(unsigned char **host, unsigned char *aux)
 {
   int i, j, size;
@@ -54,7 +54,7 @@ void hostConvert(unsigned char **host, unsigned char *aux)
 
 }
 
-//Le os parametros enviados pelo usuario
+//Reads the input
 void readInput(int argc, char **argv, unsigned char **host, unsigned char **hostDNS, unsigned char **server)
 {
   unsigned char *aux = NULL;
@@ -89,7 +89,7 @@ void readInput(int argc, char **argv, unsigned char **host, unsigned char **host
 
 }
 
-//Seta as flags para enviar a requisicao DNS
+//Sets flags for the requisition
 void setFlags(unsigned short *flags, int response, int opcode, int authoritativeAnswer, int truncation, int recursionDesired,
               int recursionAvailable, int reserved, int answerAuthenticated, int nonAuthenticatedData, int returnCode)
 {
@@ -105,7 +105,7 @@ void setFlags(unsigned short *flags, int response, int opcode, int authoritative
   (*flags) = ((*flags) << 1) | recursionDesired;
 }
 
-//Le os valores das flags da repsosta do DNS
+//Reads flags of the answer
 void readFlags(unsigned short flags, int *response, int *opcode, int *authoritativeAnswer, int *truncation, int *recursionDesired,
               int *recursionAvailable, int *reserved, int *answerAuthenticated, int *nonAuthenticatedData, int *returnCode)
 {
@@ -121,7 +121,7 @@ void readFlags(unsigned short flags, int *response, int *opcode, int *authoritat
   (*returnCode) = flags & 0xF;
 }
 
-//Le o dominio recebido pela resposta do DNS
+//Reads the domain of the answer
 unsigned char* readName(unsigned char *reader, int *size, unsigned char *message)
 {
     unsigned char *aux = NULL;
@@ -171,7 +171,7 @@ unsigned char* readName(unsigned char *reader, int *size, unsigned char *message
     return name;
 }
 
-//Le os dados recebidos pela resposta do tipo A e AAAA
+//Reads the data received by the type A and AAAA
 unsigned char* readData(unsigned char *data, unsigned int size)
 {
   unsigned char *copy = NULL;
@@ -185,7 +185,7 @@ unsigned char* readData(unsigned char *data, unsigned int size)
   return copy;
 }
 
-//Imprime o erro recebido pela resposta DNS
+//Prints the error of requisition
 void dnsError(int error)
 {
   if(error == 1)
@@ -212,7 +212,7 @@ void dnsError(int error)
     printf("ERROR\n");
 }
 
-//Cria socket, envia a requisicao DNS e recebe e le a resposta do servidor
+//Creates socket, sends the requisition and receive and read the answer
 void dns(unsigned char *host, int type, unsigned char *server)
 {
   int i, destinySize;
@@ -265,7 +265,6 @@ void dns(unsigned char *host, int type, unsigned char *server)
   else if(type == TYPE_MX)
     printf("MX\t");
 
-  //Inicializacao
   destiny.sin_family = AF_INET;
   destiny.sin_port = htons(PORT);
   if(!inet_aton(server,&(destiny.sin_addr))){
@@ -275,8 +274,6 @@ void dns(unsigned char *host, int type, unsigned char *server)
   memset(destiny.sin_zero,0x00,8);
   destinySize = sizeof(destiny);
 
-
-  //Criacao do socket
   sock = socket(AF_INET,SOCK_DGRAM,IPPROTO_UDP);
   if(sock == -1){
     perror("ERROR socket ");
@@ -286,7 +283,6 @@ void dns(unsigned char *host, int type, unsigned char *server)
   tv.tv_usec= 0;
   setsockopt(sock,SOL_SOCKET,SO_RCVTIMEO,(struct timeval*)&tv,sizeof(struct timeval));
   
-  //Montar mensagem
   memset(message,0,sizeof(message));
   id = (unsigned short *) &message;
   *id = (unsigned short) htons(getpid());
@@ -319,24 +315,17 @@ void dns(unsigned char *host, int type, unsigned char *server)
   questionClass =(unsigned short *)&message[sizeof(unsigned short)*7+strlen(host)+1];
   *questionClass = htons(1);
 
-  //Envio da requisicao
   if(sendto(sock,(char*)message,sizeof(message),0,(struct sockaddr*)&destiny,destinySize) < 0)
   {
     perror("ERROR sendto ");
   }
 
-  //Fazer processo dormir por 5 segundos
-  sleep(5);
-
-  //Recebimento da resosta
   if((recvfrom(sock,(char*)(answer) ,sizeof((answer)),0,(struct sockaddr*)&destiny,(socklen_t*)&destinySize) < 0))
   {
     perror("ERROR DNS");
     return;
   }
 
-
-  //Leitura da resposta
   dataLength = 0;
   nameSize = 0;
   id = (unsigned short*) (answer);
@@ -344,7 +333,6 @@ void dns(unsigned char *host, int type, unsigned char *server)
   readFlags(ntohs(*flagsp),&flagResponse,&flagOpcode,&flagAuthoritativeAnswer,&flagTrucation,&flagRecursionDesired,
                           &flagRecusionAvailable,&flagReserved,&flagAnswerAuthenticated,&flagNonAuthenticatedData,&flagReturnCode);
 
-  //Se houve erro na consulta
   if(flagReturnCode != 0){
     dnsError(flagReturnCode);
     return;
@@ -387,7 +375,6 @@ void dns(unsigned char *host, int type, unsigned char *server)
     }
     dataLength+=sizeof(unsigned short)*3+sizeof(unsigned int)+ntohs(*answerDataLength);
 
-    //Impressao da resposta
     if(answers)
       printf("\t");
     if(answerType!=NULL && ntohs(*answerType) == TYPE_A){
@@ -436,7 +423,6 @@ void dns(unsigned char *host, int type, unsigned char *server)
 
     dataLength+=sizeof(unsigned short)*3+sizeof(unsigned int)+ntohs(*authoritativeDataLength);
     
-    //Impressao da resposta
     if(authorities)
       printf("\t");
     if(ntohs(*authoritativeType) == TYPE_SOA){
@@ -475,16 +461,13 @@ int main(int argc, char **argv)
 {
   unsigned char *host = NULL, *hostDNS = NULL, *server = NULL; 
 
-  //Leitura dos parametros
   readInput(argc,argv,&host,&hostDNS,&server);
 
-  //Consulta
   printf("%s:\n", host);
   dns(hostDNS,TYPE_A,server);
   dns(hostDNS,TYPE_AAAA,server);
   dns(hostDNS,TYPE_MX,server);
 
-  //Liberar memoria alocada
   free(host);
   free(hostDNS);
   free(server);
