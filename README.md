@@ -1,5 +1,5 @@
 # dns-client
-This program receives a domain and returns its IP address through A, AAAA and MX types.
+This program receives a domain and a server (optional) and returns its IP address through DNS A, AAAA and MX types.
 
 #### input
 ```
@@ -32,3 +32,5 @@ A	ERROR: NXDOMAIN
 AAAA	ERROR: NXDOMAIN
 MX	ERROR: NXDOMAIN
 ```
+## References
+[Microsoft](https://technet.microsoft.com/library/dd197470)
