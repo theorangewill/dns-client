@@ -33,4 +33,4 @@ AAAA	ERROR: NXDOMAIN
 MX	ERROR: NXDOMAIN
 ```
 ## References
-[Microsoft](https://technet.microsoft.com/library/dd197470)
+[Microsoft](https://technet.microsoft.com/library/dd197470) - DNS Protocol
